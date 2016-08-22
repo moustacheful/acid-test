@@ -22,7 +22,7 @@ class StatusDisplay extends React.Component{
 		if( status.isClosed ){
 			marketStatus = <div className="status-market">
 				<i className="fa fa-info-circle"></i>
-				<strong className="closed">Market is CLOSED | </strong> Last data received: {moment(status.lastDataTime).format('DD/MM h:mm a')}
+				<strong className="closed">Market is CLOSED | </strong> Last data received: {moment.utc(status.lastDataTime).format('DD/MM h:mm a')}
 			</div>
 		}
 

@@ -3,15 +3,15 @@ import bluebird from 'bluebird';
 import stocks from './lib/stock-service';
 import { pub, sub } from './lib/redis';
 import uuid from 'uuid';
-import _ from 'lodash'
+import _ from 'lodash';
 import { RequestError, StatusCodeError } from 'request-promise/errors';
-
+import moment from 'moment';
 
 const keyMap = {
 	t:'symbol',
 	c_fix:'change',
 	cp_fix: 'changePercentage',
-	l_cur: 'current',
+	l: 'current',
 	lt_dts: 'date'
 };
 
@@ -52,7 +52,6 @@ class StocksSocket {
 		})
 
 		stocks.on('data', async (data) => {
-
 			// If there are no items, there's something wrong! Notify the client
 			if( ! data.length ) return this.updateStatus({
 				error: 'No data in service.',
@@ -62,33 +61,49 @@ class StocksSocket {
 			// Normalize data and pick only the necessary
 			let items = _.map(data, (row) => {
 				let result = _.pick(row, _.keys(keyMap))
-				return _.mapKeys(result, (val,key) => keyMap[key]);
+				result = _.mapKeys(result, (val,key) => keyMap[key]);
+				result.date = moment(result.date).startOf('minute').toISOString();
+				return result
 			});
 
-			// Check the last time the data was changed
 			let currentDataTime = items[0].date;
+
+			let lastDataForSymbols = await pub
+				.multi( _.map(items, (item) => ['get',`stock:${item.symbol}:lastDataAt`]))
+				.execAsync()
+				
+
+			// Only let through items whose time has changed.
+			items = _.reject(items, (item,i) => item.date == lastDataForSymbols[i] )
+
+			// Check the last time the data was changed
 			let lastDataTime = await pub.hgetAsync('status','lastDataTime');
-			
-			if( lastDataTime == currentDataTime ) return this.updateStatus({
-				isClosed: true
-			})
-			
+			if( moment(currentDataTime).diff(lastDataTime,'minutes') > 5 ){
+				return this.updateStatus({
+					isClosed: true
+				})
+				
+			}
+
+			this.updateStatus({
+				isClosed: false,
+				lastDataTime: currentDataTime
+			});
+
+			if( ! items.length) return;
+
 			let multi = pub.multi();
 
 			_.each(items, (item) => {
 				let unixTime = new Date(item.date).getTime();
 				let itemKey = uuid.v4();
+				multi.set(`stock:${item.symbol}:lastDataAt`, item.date)
 				multi.hmset(`stock:${itemKey}`,item);
 				multi.zadd(`stock:${item.symbol}:latest`, unixTime, itemKey)
 			});
 			
 			multi.execAsync()
-
 			this.io.emit('stocks:data', items)
-			this.updateStatus({
-				isClosed: false,
-				lastDataTime: items[0].date
-			});
 		})
 	}
 

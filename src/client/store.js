@@ -21,6 +21,7 @@ class StockStore {
 	}
 
 	setStatus(status){
+		status.isClosed = (status.isClosed == true)
 		this.status = status
 	}
 }

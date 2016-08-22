@@ -12,7 +12,7 @@ class Chart extends React.Component {
 				labels: [],
 				datasets: [
 					{
-						label: 'Change over time',
+						label: 'Value over time',
 						data: []
 					}
 				]

@@ -31,11 +31,11 @@ class StockDetail extends React.Component {
 								</tr>
 							</thead>
 							<tbody>
-								{ store.history.map( (row,i) => 
-									<tr key={i}>
-										<td>{moment(row.date).format('DD/MM h:mm a')}</td>
-										<td className={row.change > 0 ? 'stock-up':'stock-down'}>{row.change}</td>
-										<td className={row.change > 0 ? 'stock-up':'stock-down'}>{row.changePercentage}%</td>
+								{ store.history.reverse().map( (row,i) => 
+									<tr className={row.change > 0 ? 'stock-up':'stock-down'} key={i}>
+										<td>{moment.utc(row.date).format('DD/MM h:mm a')}</td>
+										<td className="colorize">{row.change}</td>
+										<td className="colorize">{row.changePercentage}%</td>
 										<td>{row.current}</td>
 									</tr>
 								) }
@@ -50,7 +50,7 @@ class StockDetail extends React.Component {
 	getChartData(data){
 		return _.map(data,(row) => {
 			return {
-				label:moment(row.date).format('h:mm a'),
+				label:moment.utc(row.date).format('h:mm a'),
 				value:row.current
 			}
 		})

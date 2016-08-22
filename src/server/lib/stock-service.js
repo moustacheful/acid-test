@@ -56,7 +56,7 @@ class StockService extends EventEmitter {
 				}
 
 				// Continue anyway
-				setTimeout(next, 1 * 60 * 1000);
+				setTimeout(next, .5 * 60 * 1000);
 			}
 		);
 	}
