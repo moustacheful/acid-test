@@ -12,5 +12,8 @@ redis.init(process.env.REDIS_URL);
 pub.flushdb()
 
 stocks.start()
-//app.register(routes);
+
+if(process.env.NODE_ENV != 'production')
+	app.register(routes);
+
 app.register(stockSocket);
