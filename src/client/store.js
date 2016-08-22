@@ -9,7 +9,7 @@ class StockStore {
 	};
 
 	@computed get latest(){
-		return _.map(_.groupBy(this.stockData,'symbol'), (group) => group[0] )
+		return _.map(_.groupBy(this.stockData,'symbol'), (group) => _.last(group) )
 	}
 
 	@computed get history(){

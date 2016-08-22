@@ -9,7 +9,6 @@ import redis from './lib/redis';
 import { pub } from './lib/redis';
 
 redis.init(process.env.REDIS_URL);
-pub.flushdb()
 
 stocks.start()
 

@@ -47,9 +47,9 @@ h3,h4
 	display flex
 	flex-wrap wrap
 	justify-content center
+	animation slideUp .5s ease both
 
 	.stock
-		animation slideUp .5s ease both
 		proportional(1,1)
 		cursor pointer
 		display flex
@@ -64,10 +64,10 @@ h3,h4
 		align-items center
 		position relative
 
-		&.stock-up 
+		&.animate.stock-up 
 			animation tickGreen 2s ease .3s
 			
-		&.stock-down 
+		&.animate.stock-down 
 			animation tickRed 2s ease .3s
 
 		&:hover

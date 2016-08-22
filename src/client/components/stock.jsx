@@ -3,10 +3,16 @@ import { observer } from 'mobx-react';
 
 @observer
 class Stock extends React.Component {
+	componentDidMount(){
+		setTimeout( () => this.assignAnimationClass())
+	}
+	componentDidUpdate(){
+		setTimeout( () => this.assignAnimationClass())
+	}
 	render(){
 		const stock = this.props.data;
 		return (
-			<div onClick={this.viewDetail} className={"stock " + (stock.change > 0 ? 'stock-up':'stock-down')}>
+			<div ref={ (r) => this.el = r } onClick={this.viewDetail} className={"stock " + (stock.change > 0 ? 'stock-up' : 'stock-down')}>
 				<div className="inner">
 					<div className="content">
 						<h2>{stock.symbol}</h2>
@@ -19,6 +25,15 @@ class Stock extends React.Component {
 				</div>
 			</div>
 		)
+	}
+
+	assignAnimationClass(){
+		if(this.el){
+			this.el.className = this.el.className.replace(' animate','')
+			setTimeout( () => {
+				this.el.className += ' animate' 
+			}, 10)
+		}
 	}
 
 	viewDetail = () => {
