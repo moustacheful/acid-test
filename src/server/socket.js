@@ -28,7 +28,7 @@ class StocksSocket {
 			}
 
 			socket.emit('status', data.status);
-			socket.emit('stocks:data', data.history)
+			socket.emit('stocks:history', data.history)
 		});
 
 		stocks.on('error', (error) => {
@@ -76,6 +76,7 @@ class StocksSocket {
 			// Only let through items whose time has changed.
 			items = _.reject(items, (item,i) => item.date == lastDataForSymbols[i] )
 
+			/*
 			// Check the last time the data was changed
 			let lastDataTime = await pub.hgetAsync('status','lastDataTime');
 			if( moment(currentDataTime).diff(lastDataTime,'minutes') > 5 ){
@@ -84,6 +85,7 @@ class StocksSocket {
 				})
 				
 			}
+			*/
 
 			this.updateStatus({
 				isClosed: false,
@@ -102,7 +104,7 @@ class StocksSocket {
 				multi.zadd(`stock:${item.symbol}:latest`, unixTime, itemKey)
 			});
 			
-			multi.execAsync()
+			multi.exec()
 			this.io.emit('stocks:data', items)
 		})
 	}
@@ -125,7 +127,7 @@ class StocksSocket {
 
 	getHistory(){
 		let commands = _.map( process.env.STOCK_SYMBOLS.split(','), (symbol) => 
-			['zrange',`stock:${symbol}:latest`,0,10]
+			['zrange',`stock:${symbol}:latest`,-30,-1]
 		);
 
 		return pub.multi(commands).execAsync().then(function(results){

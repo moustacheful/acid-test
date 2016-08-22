@@ -28,13 +28,10 @@ class StockStore {
 
 const store = new StockStore();
 const socket = io.connect('/')
-socket.on('status',function(data){
-	store.setStatus(data)
-})
-socket.on('stocks:data',function(data){
-	store.addData(data)
-})
-socket.on('message',function(data){
-	console.log('Server says:',data)
-})
+
+socket.once('message', (data) => console.log('Server says:',data) )
+socket.once('stocks:history', (data) => store.addData(data) )
+socket.on('status', (data) => store.setStatus(data) )
+socket.on('stocks:data', (data) => store.addData(data) )
+
 export default store
