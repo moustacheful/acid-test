@@ -7,12 +7,13 @@ bluebird.promisifyAll(redis.Multi.prototype);
 var pub = undefined;
 var sub = undefined; 
 
-function init(redisUri){
-	pub = redis.createClient(redisUri);
-	sub = redis.createClient(redisUri);
+function init(redisUrl){
+	pub = redis.createClient(redisUrl);
+	sub = redis.createClient(redisUrl);
 	pub.on("error", function (err) {
 		console.log("Redis error " + err, err.stack);
 	});
 }
 
 export default { pub, sub, init }
+export { pub, sub }
