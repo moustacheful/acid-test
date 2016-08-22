@@ -7,6 +7,7 @@ import _ from 'lodash';
 import { RequestError, StatusCodeError } from 'request-promise/errors';
 import moment from 'moment';
 
+var ticksWithoutData = 0;
 const keyMap = {
 	t:'symbol',
 	c_fix:'change',
@@ -76,23 +77,22 @@ class StocksSocket {
 			// Only let through items whose time has changed.
 			items = _.reject(items, (item,i) => item.date == lastDataForSymbols[i] )
 
-			/*
-			// Check the last time the data was changed
-			let lastDataTime = await pub.hgetAsync('status','lastDataTime');
-			if( moment(currentDataTime).diff(lastDataTime,'minutes') > 5 ){
+			if( ! items.length ) {
+				ticksWithoutData++;
 				return this.updateStatus({
-					isClosed: true
-				})
-				
+					isClosed: ticksWithoutData >= 4 ? true : false,
+					lastDataTime: currentDataTime
+				});
 			}
-			*/
 
+
+			// We have changed items and we're good to go!
+			ticksWithoutData = 0;
 			this.updateStatus({
 				isClosed: false,
 				lastDataTime: currentDataTime
 			});
-
-			if( ! items.length) return;
+			
 
 			let multi = pub.multi();
 
