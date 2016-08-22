@@ -5,9 +5,9 @@ import stockSocket from './socket'
 import routes from './routes';
 import stocks from './lib/stock-service';
 import _ from 'lodash';
-
 import redis from './lib/redis';
-redis.init(process.env.REDIS_URI);
+
+redis.init(process.env.REDIS_URL);
 
 stocks.start()
 app.register(routes);

@@ -1,2 +1,2 @@
-REDIS_URI=redis://localhost:6379
+REDIS_URL=redis://localhost:6379
 STOCK_SYMBOLS=AAPL,ABC,MSFT,TSLA,F
