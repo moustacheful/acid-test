@@ -1,0 +1,34 @@
+circle(radius)
+    width radius
+    height radius
+    border-radius 50%
+
+stagger(iterations,delay)
+    stagger-animation iterations delay
+    stagger-transition iterations delay
+
+stagger-animation(iterations,delay)
+    iterations -= 1
+    for iteration in (0..iterations)
+        &:nth-child({iteration})
+            animation-delay delay*iteration
+
+stagger-transition(iterations,delay)
+    iterations -= 1
+    for iteration in (0..iterations)
+        &:nth-child({iteration})
+            transition-delay delay*iteration
+
+
+proportional(width,height)
+    &:after
+        display block
+        content ''
+        padding-bottom (height/width*100)%
+
+cover-container()
+    position absolute
+    top 0px
+    left 0px
+    width 100%
+    height 100%

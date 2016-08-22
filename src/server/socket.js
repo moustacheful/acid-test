@@ -1,0 +1,141 @@
+import SocketIO from 'socket.io';
+import bluebird from 'bluebird';
+import stocks from './lib/stock-service';
+import { pub, sub } from './lib/redis';
+import uuid from 'uuid';
+import _ from 'lodash'
+import { RequestError, StatusCodeError } from 'request-promise/errors';
+
+
+const keyMap = {
+	t:'symbol',
+	c_fix:'change',
+	cp_fix: 'changePercentage',
+	l_cur: 'current',
+	lt_dts: 'date'
+};
+
+class StocksSocket {
+	constructor(server){
+		this.io = SocketIO(server)
+
+		this.io.on('connection', async (socket) =>{
+			socket.emit('message', 'hello user!')
+
+			let data = {
+				status: await pub.hgetallAsync('status'),
+				history: await this.getHistory()
+			}
+
+			socket.emit('status', data.status);
+			socket.emit('stocks:data', data.history)
+		});
+
+		stocks.on('error', (error) => {
+			let message = 'Some error happened!';
+
+			switch(error.constructor){
+				case StatusCodeError:
+					message = 'The service API returned an error.';
+					break;
+				case RequestError:
+					message = `There was an internal problem with the data request: '${error.message}'`;
+					break;
+				default:
+					message = error.message || error
+			}
+
+			this.updateStatus({
+				health: 'error',
+				error: message
+			});
+		})
+
+		stocks.on('data', async (data) => {
+
+			// If there are no items, there's something wrong! Notify the client
+			if( ! data.length ) return this.updateStatus({
+				error: 'No data in service.',
+				health: 'error'
+			});
+
+			// Normalize data and pick only the necessary
+			let items = _.map(data, (row) => {
+				let result = _.pick(row, _.keys(keyMap))
+				return _.mapKeys(result, (val,key) => keyMap[key]);
+			});
+
+			// Check the last time the data was changed
+			let currentDataTime = items[0].date;
+			let lastDataTime = await pub.hgetAsync('status','lastDataTime');
+			
+			if( lastDataTime == currentDataTime ) return this.updateStatus({
+				isClosed: true
+			})
+			
+			let multi = pub.multi();
+
+			_.each(items, (item) => {
+				let unixTime = new Date(item.date).getTime();
+				let itemKey = uuid.v4();
+				multi.hmset(`stock:${itemKey}`,item);
+				multi.zadd(`stock:${item.symbol}:latest`, unixTime, itemKey)
+			});
+			
+			multi.execAsync()
+
+			this.io.emit('stocks:data', items)
+			this.updateStatus({
+				isClosed: false,
+				lastDataTime: items[0].date
+			});
+		})
+	}
+
+	updateStatus(status){
+		let newStatus = {
+			lastFetch: new Date().toISOString(),
+			health: 'ok',
+			error: '',
+			...status
+		};
+
+		// Set the new status and immediately retrieve it (to send full status).
+		pub.hmsetAsync('status',newStatus).then( ()=>{
+			return pub.hgetallAsync('status')
+		}).then( (status) =>
+			this.io.emit('status',status)
+		);
+	}
+
+	getHistory(){
+		let commands = _.map( process.env.STOCK_SYMBOLS.split(','), (symbol) => 
+			['zrange',`stock:${symbol}:latest`,0,10]
+		);
+
+		return pub.multi(commands).execAsync().then(function(results){
+			let keys = _.flatten(results);
+			return pub.multi(
+				_.map(keys, (key) => ['hgetall', `stock:${key}`] )
+			).execAsync()
+
+		})
+	}
+}
+
+
+function register(server, options, next){	
+	try {
+		new StocksSocket(server.listener);
+	} catch (err){
+		console.log(err)
+	}
+	console.log('SocketIO attached.');
+	next();
+}
+
+register.attributes = {
+	name: 'stock-socket'
+}
+
+export default { register }

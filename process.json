@@ -1,0 +1,8 @@
+{
+	"apps": [{
+		"name": "API",
+		"script": "./dist/server",
+		"watch": ["./dist/server"],
+		"source_map_support": true
+	}]
+}
