@@ -12,5 +12,5 @@ redis.init(process.env.REDIS_URL);
 pub.flushdb()
 
 stocks.start()
-app.register(routes);
+//app.register(routes);
 app.register(stockSocket);
